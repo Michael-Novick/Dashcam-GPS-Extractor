@@ -1,0 +1,71 @@
+# Michael Novick
+# July 2017
+# Some code sourced from Dr. Steve Mitchell detection.py code
+
+import cv2
+import os
+from PIL import Image
+import pytesseract
+
+# This script takes incoming GPS and time information from the dashcam video stream, where it is transmitted in the form
+# of overlaid text on the video stream. It is extracted using Optical Character Recognition(OCR) with the Pytesseract
+# module. This module was incorporated by following the procedures outlined by pyimagesearch.com blog, and Tesseract
+# was incorporated by following the procedure from UB-Mannheim on Github.com.
+
+# Identify video file (or video stream)
+video_name = 'MOV_0002.AVI'
+cap = cv2.VideoCapture(video_name)
+
+# Print video dimensions, used for determination of snipped window
+print(cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+# Create .txt file for storing data
+f = open('video_data_' + video_name.rstrip('.AVI') + '.txt', 'w')
+while cap.isOpened():
+
+    # Take one representative frame per second. This loop method can be improved by fully utilizing VideoCapture class
+    # methods but this simple loop is used just to demonstrate the concept.
+    count = 0
+    ret = None
+    frame = None
+    while count < 30:
+        ret, frame = cap.read()
+        count += 1
+
+    # Used to end the loop if there are no more frames. This is a consequence of using the counting loop to control
+    # the analyzed frame. Using a VideoCapture class method may eliminate this requirement.
+    if ret == 0:
+        break
+
+    # Snip section of video frame of interest
+    snip = frame[960:1020, 1595:1915]
+
+    # Convert to grayscale
+    gray = cv2.cvtColor(snip, cv2.COLOR_BGR2GRAY)
+
+    # Apply binary filter to change all colors that are yellow (0, 255, 255) to 255 grayscale. 181 corresponds to
+    # intensity of yellow converted to grayscale
+    val, gray_1 = cv2.threshold(gray, 181, 255, cv2.THRESH_BINARY)
+
+    cv2.imshow("Snip", gray_1)
+
+    # Save as temporary image. This procedure is adapted from Adrian Rosebrock:
+    # http://www.pyimagesearch.com/2017/07/10/using-tesseract-ocr-python/
+    image = "{}.png".format(os.getpid())
+    cv2.imwrite(image, gray_1)
+    binary_image = Image.open(image)
+    text = pytesseract.image_to_string(binary_image)
+    os.remove(image)
+
+    # Write read text to the open file, named f. This current format outputs "0" as "o" but this can be fixed with
+    # some simple string processing.
+    f.write(text + ' \n')
+
+    # press the q key to break out of video
+    if cv2.waitKey(25) & 0xFF == ord('q'):
+        break
+
+# clear everything once finished
+cap.release()
+cv2.destroyAllWindows()
+f.close()
