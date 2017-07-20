@@ -1,0 +1,2 @@
+# Dashcam-GPS-Extractor
+This script takes incoming GPS and time information from the dashcam video stream, where it is transmitted in the form of overlaid text on the video stream. It is extracted using Optical Character Recognition(OCR) with the Pytesseract module. This module was incorporated by following the procedures outlined by pyimagesearch.com blog, and Tesseract was incorporated by following the procedure from UB-Mannheim on Github.com.
